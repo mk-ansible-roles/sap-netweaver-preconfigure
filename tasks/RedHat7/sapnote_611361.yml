@@ -1,0 +1,113 @@
+---
+#
+# SAP Note 611361 - Hostnames of SAP servers
+#
+# General rule for hostnames according to RFCs 952, 1101, 1123, 1178:
+#
+# Alphanumerical string of alpha characters [A-Z] and [a-z] and digits [0-9] and the hyphen (or minus) character "-". 
+# Although the newer RFCs permit hostnames beginning with digits we recommend hostnames to begin with an alpha character. 
+# The period character "." is only allowed to delimit components of domain names like (sapc11.sap.com).
+
+#
+# On multihomed hosts the hostname must be assigned to the IP address of the primary network interface. See also note 21151.
+#
+#[SAP Note 21151]
+#[...]
+# SAP strongly recommends that you configure the SAP server computers according to the following rules:
+#
+#   1. Every SAP server must have a network interface that can be reached by all Application Servers of the same SAP system 
+#      and by all frontend computers and other communication partners. This can always be achieved by appropriate IP configuration.
+#
+#   2. The hostname of an SAP Application Server (i.e. the output of  the command "hostname") must be assigned to the IP address of the network interface in item 1).
+#
+#      Restrictions on the hostname, mechanisms for the assignement between hostnames and IP addresses (e.g. hosts file, DNS) and exceptions that apply to 
+#      high availability configurations are discussed in the "Network Guide" described below and in related notes.
+#      The profile parameter SAPLOCALHOST may be used to make the SAP system believe it runs on a different hostname.
+#
+#   3. The SAP system and all frontend access and communication interfaces have to be configured using only the hostnames of item 2) 
+#      or the IP address of item 1). No other IP name or IP address of an SAP server may appear in any table or configuration file of the SAP system. 
+#      This rule ensures that every communication partner can actually reach the IP address that the hostname resolves into.
+#
+#   4. If the SAP servers are connected via a seperate fast server network, static IP routes have to be used to route the server-internal network traffic over this network.
+#
+#   5. The Document "Network Integration of SAP Servers" describes the TCP/IP network configuration for SAP Servers in detail. 
+#      Please find this document attached to this note.
+#[...]
+#[SAP Note 21151]      
+
+### VARIABLES
+# This playbook should be run after a proper network setup, e.g. with linux-system-role network 
+# so we can assume at this point, that the SAP primary network name and ip_address is configured and up
+# in most test cases this will be identical to 
+#   ansible_hostname
+#   ansible_default_ipv4.address
+#   ansible_domain
+#   ansible_fqdn
+#
+# Definition in playbook
+#   sap_hostname (optional) -> falls back to ansible_hostname if undefined
+#   sap_domain -> falls back to ansible_domain if undefined
+#   sap_ip -> falls back to ansible_default_ipv4.address if undefined (or whatever sap_hostname resolves to)
+#   sap_fqdn = sap_hostname.sap_domain
+#
+#  Algorithmus
+#   - check if sap_hostname is resolving to an ip
+#   - check if sap_hostname matches "hostname -s"
+#   - check if sap_fqdn is resolving to an ip
+#   - check if this matches to sap_ip
+#   - check if sap_ip is configure (element in ansible_all_ipv4_addresses) => fail "sap_ip is not configured on this host"
+#   - check if name and ip is locally resolved properly => fail "network settings incorrect. name/ip lookup not working"
+#   - check if DNS forward and reverse lookup is working => warn "network lookup is only working locally"
+#
+
+
+
+
+# For hostnames of servers running SAP software the following additional restrictions must be obeyed:
+#
+# Maximum length of the hostname:
+#           up to 13 characters for SAP rel. 4.6 or higher <--- This playbook will only support this !!
+#           up to  8 characters for SAP rel. up to 4.5
+#
+# The hostname command must only return the host name and not the Fully Qualified Domain Name (FQDN). 
+# I.e. if the FQDN is "ls3001.acme.com" the required output of hostname will be "ls3001".
+#
+# Hostnames must be considered "case sensitive". That means hostnames shall be used in the same case (upper or lower) in all SAP configurations 
+# as well as in the network configuration (DNS or etc/hosts). 
+#
+# You must ensure consistent name resolving of the hostname from hostname to IP address 
+# and back from the IP address to the the same hostname (case sensitive match). See also note 129997.
+#
+#[SAP NOTE 129997]
+# [...]
+# You can use the SAP tool "niping" to check the correct hostname resolution:
+#   niping -v -H <hostname>
+# You should always use the newest niping version, please see SAP note 799428 how to get the newest version.
+#
+# Please check also some other important requirements on the DNS configuration that are stated in note 124562
+#
+
+ 
+- name: make sure the short hostname is returned with "hostname" command and not FQDN
+  shell: |
+     if [ $(hostname -s) == $(hostname) -a $(hostname -f) == $(hostname).$(hostname -d) ]; then
+        rc=0
+     else
+        hostnamectl set-hostname $(hostname -s)
+        rc=1
+     fi
+     exit $rc
+  register: change_hostname
+  changed_when: change_hostname.rc == 1
+  failed_when: change_hostname.rc >= 2 
+
+
+#- name: Set correct entry in /etc/hosts
+#  lineinfile: 
+#    dest: /etc/hosts
+#    line: "{{ ansible_default_ipv4.address }} {{ ansible_fqdn }} {{ ansible_hostname }}" 
+#
+
+- name: ensure consistent name resolving of the hostname from hostname to IP address and back from the IP address to the the same hostname 
+
+...

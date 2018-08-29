@@ -1,0 +1,21 @@
+---
+#
+# This playbook configures SAP system according to SAP Note 1496410
+# https://launchpad.support.sap.com/#/notes/1496410
+# Red Hat Enterprise Linux 6.x: Installation and Upgrade
+# 
+#
+#
+# ensure hostname complies to SAP Note 611361
+#
+# ensure Kernel Parameters comply to SAP Note 941735
+#
+# Process resource limts
+#
+# Additonal Software Packages
+#
+# Threading
+#
+# JDK
+#
+

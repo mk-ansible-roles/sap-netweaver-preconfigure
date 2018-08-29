@@ -1,0 +1,7 @@
+---
+#
+# This playbook configures SAP system according to SAP Note 2002167
+# https://launchpad.support.sap.com/#/notes/2002167
+# Red Hat Enterprise Linux 7.x: Installation and Upgrade
+# 
+
