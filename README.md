@@ -1,6 +1,8 @@
 Role Name
 =========
 
+# THIS ROLE IS DEPRECATED AND WILL BE DELETED IN 12.2022<BR>use _community.sap_install_ collection instead
+
 A brief description of the role goes here.
 
 Requirements
